@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<HTML>
+    <HEAD>
+        <style>
+            #butt{
+                background-color: #ff1a1a;
+                border: none;
+                color: white;
+                padding: 8px 20px;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 16px;
+                border-radius:25px;
+                border: 4px solid black;
+            }
+            #ddown{
+                background-color: #ff1a1a;
+                border: none;
+                color: white;
+                padding: 10px 10px;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 16px;
+                border-radius:25px;
+                border: 4px solid black;
+            }
+            #button{
+               background-color: #ff1a1a;
+               border: none;
+               color: white;
+               padding: 15px 32px;
+               text-align: center;
+               text-decoration: none;
+               display: inline-block;
+               font-size: 16px;
+               border-radius:25px; 
+               border: 4px solid black;
+            }
+            #restart{
+                background-color: #ff1a1a;
+                border: none;
+                color: white;
+                padding: 8px 15px;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 16px;
+                border-radius:25px; 
+                border: 4px solid black;
+             }
+        </style>
+        <meta http-equiv="content-type" content="text/html;charset=utf-8">
+        <TITLE>Pico Fermi Bagels</TITLE>
+        <!--JS implementation notes. NN 2.0 lacks Math.random, xxx.toString(). hangs sometimes after changing # of digits, e.g., 2 back to 3? NN 3.0. substr? use substring. "".indexOf ; test .length first AOL 3.0 lacks "BUTTON", events?
+        MSIE doesn't do BODY onload? rdig not an object. <undef not a #> in line 106
+test w/ older/other Win AOL 4.0; NN 3.0?
+it would be nice to set MAXLENGTH for guess fields dynamically but not suppored in JS
+
+//debug
+//var msgWindow=window.open("")
+//msgWindow.document.write(""xx" + "<BR>");
+-->
+        <script language="javascript" type="text/javascript">
+            <!--
+            //constants
+            //var kMinDigits = 2; // unused currently
+            
+            // declare global vars. reset in initGame
+            var NumDigits = 3;
+            var AllowZero = true;
+            var Answer = "";
+            
+            //getRand
+            function getRand(lo,hi) {
+            if (Math.random === null) { // NN 2.0
+                var dt = new Date();
+                return lo + ((dt.getMinutes() * dt.getSeconds()) % (hi+1-lo));
+                }
+            return lo + Math.floor(Math.random() * (hi+1-lo));
+            }
+            
+            //getSelNum
+            function getSelNum(sel) {
+            return parseInt(sel.options[sel.selectedIndex].text);
+            }
+            
+            //giveUp
+            function giveUp() {
+            alert("Pico Fermi Bagels\nanswer: " + Answer);
+            }
+            
+            //newGame
+            function newGame(arg) {
+            //Answer = "";    // prevent some results?
+            document.PFB.guess1.focus();    // reset cursor to 1st guess
+            var elems = document.PFB.elements, i, elem;
+            for (i = 0; i < elems.length; i++) {
+                elem = elems[i];
+                if ((elem.name.indexOf("guess") === 0) || (elem.name.indexOf("result") === 0)) {
+                    elem.value = "";
+                    }
+                }
+            generateAnswer();
+            }
+            
+            //generateAnswer
+            function generateAnswer() {
+            Answer = "";    // new 'blank' answer
+            var i, rch, rdig, z9 = 9, dupDig, z0 = (AllowZero) ? 0 : 1;
+            
+            for (i=0; i < NumDigits; i++) {
+                // generate new digit in range, non-duplicate
+                dupDig = true;
+                while (dupDig) {
+                    rdig = getRand(z0,z9); // 0|1 - 9
+                    rch = "0123456789".substring(rdig,rdig+1); // NN 3.0 no substr?  rdig.toString();
+                    if (Answer.length === 0 || Answer.indexOf(rch) < 0)    { // not present? .length for NN 3.0
+                            dupDig = false;
+                            }
+                    }
+            
+                Answer += rch; // add new digit
+            
+                // squeeze range to elim some dups
+                if (rdig === z0) {
+                    z0++;
+                    }
+                else if (rdig == z9) {
+                    z9--;
+                    }
+                }
+            }
+            
+            //evalGuess
+            function evalGuess(fguess, fresult) {
+            var guess = fguess.value;    // trim whitespace?
+            if (guess === "") {
+                return;
+                }
+            
+            if (Answer === "") {
+                initGame(false);    // e.g., IE5 didn't do onload?
+                }
+            
+            var i, fermi = 0, pico = 0, g1, result = "";
+            
+            // check length of guess
+            if (guess.length != NumDigits) {
+                result = NumDigits + " digits only";
+                }
+            else {
+                for (i=0; i < NumDigits; i++) {
+                    g1 = guess.substring(i,i+1);    // NN 3.0
+                    if (("0123456789".indexOf(g1) < 0) || (g1 === "0" && !AllowZero)) {
+                        result += g1 + " not valid; ";
+                        }
+                    else if (((i+1) < NumDigits) && (guess.indexOf(g1,i+1) > i)) {
+                        result += g1 + " duplicate; ";
+                        }
+                    else if (Answer.charAt(i) === g1.charAt(0)) {
+                        fermi++;
+                        }
+                    else if (Answer.indexOf(g1) >= 0) {
+                        pico++;
+                        }
+                }
+            }
+            
+            if (result === "") {
+                if (pico===0 && fermi===0) {
+                    result = "Bagels";
+                    }
+                else {
+                    for (i=0; i < fermi; i++) {
+                        result += "Fermi ";
+                        }
+                    if (fermi == NumDigits) {
+                        result += "!!!"; 
+                        }
+                    else {
+                        for (i=0; i < pico; i++) {
+                            result += "Pico ";
+                            }
+                        }
+                    }
+                }
+            fresult.value = result;
+            // popup 'win' except recursive problem with alert and onFocus
+            }
+            
+            //initGame
+            function initGame(ng) {
+            // set params to form values (init/reload)
+            AllowZero = document.PFB.fAllowZero.checked;
+            NumDigits = getSelNum(document.PFB.fNumDigits);
+            if (ng) {
+                newGame(0);
+                }
+            else {
+                generateAnswer();
+                }
+            }
+            //-->
+        </script>
+        <!--NS implementation notes. only a few 2.x dependencies/optimizations. I couldn't test on 1.x due to heap limitations (possibly reduce NUMFIELDS?) GetGlobals for GetGlobalVar, StrPos for CharPos, AddDeferredAction for AddDeferredSend -->
+        <META NAME="DATA.giveUp" CONTENT="func(fdata)
+begin
+    /*alternatively, use protoFlash:flashText from xvabbmet.htm example*/
+    GetRoot():Notify(3 /*kNotifyAlert*/,
+        &quot;Pico Fermi Bagels&quot;,
+        &quot;answer: &quot; &amp; fdata.ANSWER);
+    NIL;    /*avoid RESET*/
+end">
+        <!--borrowed from dynatext.htm example-->
+        <META NAME="DATA.TEXTREADONLY" CONTENT="{
+viewClass: 81,     /*clParagraphView*/
+viewFlags: 1,     /*vReadOnly*/
+NAME:    nil,
+LABEL:    &quot;&quot;,
+VALUE:    &quot;&quot;,
+HEIGHT: 12,
+viewLineSpacing: 12,
+/*is it possible to specify that this doesn't participate in tab order?*/
+
+viewSetupFormScript: func()
+begin
+    self.text := :GetData(NAME);
+    if StrFilled(LABEL)
+    then begin
+        self.styles := [
+            StrLen(LABEL)+2, @91,    /*ROM_fontSystem12Bold*/
+            StrLen(text), @90,
+            ];
+        text := LABEL &amp; $: &amp;&amp; text;
+        end
+    else self.viewFont := @90;        /*ROM_fontSystem12*/
+end,
+}">
+        <META NAME="DATA.myGetData" CONTENT="func(obj,name,cl)
+begin
+    /*NC bug: BUTTON/SUBMIT missing GetData method*/
+    local val := obj:?GetData(name);
+    if not val
+    then val := obj:AllData(true).(name);
+
+    /*also, do some format/type conversion*/
+    if cl='aint    /*fNumDigits*/
+    then val := val[0];
+    if cl='int or cl='aint
+    then RIntToL(StringToNumber(val))
+    else if cl='checkbox
+    then Length(val) &gt; 0
+    else val;
+end">
+        <META NAME="DATA.setFocus" CONTENT="func(obj,fieldName)
+/*undoc kludge: set caret to this field.
+otherwise, refresh always resets to first field.
+also, since form may be split across 2 book pages on some models/orientations,
+set same field for both pages!*/
+ if fieldName
+ then GetGlobalVar('|NewtsCape:NewtsCape|).(Intern(GetVariable(obj,'ISBN)))._pageField1 := [fieldName,fieldName]
+">
+        <META NAME="DATA.newGame" CONTENT="func(obj)
+begin
+    PlaySound(@314); /*ROM_poof*/
+    local i;
+    for i:=1 to :myGetData(obj,'NUMFIELDS, 'int)
+    do begin
+        obj:SetData(Intern('guess  &amp; i), &quot;&quot;);
+        obj:SetData(Intern('result &amp; i), &quot;&quot;);
+        end;
+    :setFocus(obj,'guess1);
+    :generateAnswer(obj);
+    obj:ScrollPage(0);    /*refresh*/
+    NIL;    /*avoid RESET of form data by buttons*/
+end">
+        <META NAME="DATA.generateAnswer" CONTENT="func(obj)
+begin
+    local Answer := &quot;&quot;, i, rdig, z9 := 9;
+    local z0 := if :myGetData(obj,'fAllowZero,'checkbox) then 0 else 1;
+
+    for i:=1 to :myGetData(obj,'fNumDigits, 'aint)
+    do begin /*generate new digit in range, non-duplicate*/
+        repeat rdig := Random (z0,z9); /*0|1 - 9*/
+        until not CharPos(Answer, &quot;0123456789&quot;[rdig], 0);
+
+        Answer := Answer &amp; rdig;
+
+        /*squeeze range to avoid some dups*/
+        if rdig = z0
+        then z0 := z0+1
+        else if rdig = z9
+        then z9 := z9-1;
+        end;
+    obj:SetData('ANSWER, answer);
+end">
+        <META NAME="DATA.evalGuess" CONTENT="func(obj, guess, resultName, nextField)
+begin
+    local numDigits := :myGetData(obj, 'fNumDigits, 'aint);
+
+    if StrLen(guess) = numDigits
+    then begin
+        local i, gch, fermi := 0, pico := 0;
+        local zch := if :myGetData(obj,'fAllowZero,'checkbox) then $0 else $1;
+
+        local result := &quot;&quot;, answer := obj:GetData('ANSWER);
+        if not StrFilled(answer)
+        then answer := :generateAnswer(obj);
+
+        /*check that guess is all digits, with none duplicated*/
+        for i:=0 to numDigits-1
+        do begin
+            gch := guess[i];     /*StrPos: gs := Substr(guess,i,1)*/
+            if (gch &lt; zch) or (gch &gt; $9)    /*non-legal/non-digit?*/
+            then result := result &amp; $( &amp; gch &amp; &quot; not &quot; &amp; zch &amp; &quot;-9)&quot;
+
+            else if CharPos(guess,gch,i+1)        /*dup: same char occurs later in guess?*/
+            then result := result &amp; $( &amp; gch &amp; &quot; duplicate)&quot;
+
+            else if answer[i] = gch                /*match digit and position?*/
+            then fermi := fermi+1
+
+            else if CharPos(answer,gch,0)        /*digit anywhere in answer?*/
+            then pico := pico+1;
+            end;
+
+        if StrLen(result)=0        /*no error?*/
+        then if fermi = 0 and pico = 0
+            then result := &quot;Bagels&quot;
+            else begin
+                for i:=1 to fermi do result := result &amp; &quot;Fermi &quot;;
+                for i:=1 to pico  do result := result &amp; &quot;Pico &quot;;
+                if fermi = numDigits then PlaySound(@102);    /*ROM_funbeep*/
+                end;
+
+        obj:SetData(resultName, result);
+        :setFocus(obj, nextField);
+        AddDeferredSend(obj,'ScrollPage, '[0]); /*delay refresh so earlier update can complete*/
+        end;
+end">
+    </HEAD>
+    <BODY bgcolor="#999291">
+        <center>
+             <H1><A NAME="game">Pico Fermi Bagels</A></H1>
+
+        </center>
+        <center>
+            <nav>
+                <a HREF="#describe" id="button">Describe</a>
+                <a HREF="#using" id="button">Using</a>
+                <a HREF="#example" id="button">Example</a>
+                <a HREF="#versions" id="button">Versions</a>
+                <a HREF="#distribution" id="button">Distribution</a>
+                <a HREF="http://communicrossings.com/html/js/pfb.htm#example" id="button">Original</a>
+            </nav>
+        </center>
+        <HR>
+        <center>
+            <FORM NAME="PFB" ACTION="none">
+                <INPUT TYPE="HIDDEN" NAME="ANSWER" VALUE="">
+                <INPUT TYPE="HIDDEN" NAME="NUMFIELDS" VALUE="16">
+                <TABLE SUMMARY="controls">
+                    <TR>
+                        <TD WIDTH="25%">
+                            <button style="" id="butt" TYPE="BUTTON" NAME="newgameBut" onClick="newGame(0)" SCRIPT="func(fdata) :BookData():newGame(self)" VALUE="New Game">New Game</button>
+                        </TD>
+                        <TD WIDTH="25%">
+                            <INPUT id="ddown" TYPE="CHECKBOX" NAME="fAllowZero" onClick="newGame(AllowZero = checked)" SCRIPT="func(val) :BookData():newGame(self)" CHECKED>Allow Zero?</TD>
+                        <TD WIDTH="25%"># Digits:
+                            <SELECT id="ddown" NAME="fNumDigits" onChange="newGame(NumDigits = getSelNum(this))" SCRIPT="func(txt) :BookData():newGame(self)">
+                                <!--NumDigits=k MinDigits + selectedIndex-->
+                                <OPTION>2</OPTION>
+                                <!--kMinDigits-->
+                                <OPTION SELECTED>3</OPTION>
+                                <OPTION>4</OPTION>
+                                <OPTION>5</OPTION>
+                                <OPTION>6</OPTION>
+                                <!--guess.MAXLENGTH,SIZE-->
+                            </SELECT>
+                        </TD>
+                        <TD WIDTH="25%">
+                            <button id="butt" TYPE="BUTTON" NAME="giveupBut" onClick="giveUp()" SCRIPT="func(fdata) :BookData():giveUp(fdata)" VALUE="Give Up">Give Up</button>
+                        </TD>
+                    </TR>
+                </TABLE>
+        </center>
+        <HR>
+        <TABLE SUMMARY="guesses and results">
+            <TR>
+                <TH WIDTH="28%">Guess</TH>
+                <TH WIDTH="72%">Result</TH>
+            </TR>
+            <center>
+                <TR>
+                    <TD>
+                         <TT>&nbsp;1.</TT>
+
+                        <INPUT id="restart" TYPE="TEXT" NAME="guess1" SIZE="6" MAXLENGTH="6" VALUE_TYPE="INT" SCRIPT="func(txt) :BookData():evalGuess(self,txt,'result1,'guess2)">
+                    </TD>
+                    <TD>
+                        <INPUT id="restart" TYPE="TEXT" NAME="result1" SIZE="40" onFocus="evalGuess(this.form.guess1,this)" VALUE_TYPE="TEXTREADONLY">
+                    </TD>
+                </TR>
+                <TR>
+                    <TD>
+                         <TT>&nbsp;2.</TT>
+
+                        <INPUT id="restart" TYPE="TEXT" NAME="guess2" SIZE="6" MAXLENGTH="6" VALUE_TYPE="INT" SCRIPT="func(txt) :BookData():evalGuess(self,txt,'result2,'guess3)">
+                    </TD>
+                    <TD>
+                        <INPUT id="restart" TYPE="TEXT" NAME="result2" SIZE="40" onFocus="evalGuess(this.form.guess2,this)" VALUE_TYPE="TEXTREADONLY">
+                    </TD>
+                </TR>
+                <TR>
+                    <TD>
+                         <TT>&nbsp;3.</TT>
+
+                        <INPUT id="restart" TYPE="TEXT" NAME="guess3" SIZE="6" MAXLENGTH="6" VALUE_TYPE="INT" SCRIPT="func(txt) :BookData():evalGuess(self,txt,'result3,'guess4)">
+                    </TD>
+                    <TD>
+                        <INPUT id="restart" TYPE="TEXT" NAME="result3" SIZE="40" onFocus="evalGuess(this.form.guess3,this)" VALUE_TYPE="TEXTREADONLY">
+                    </TD>
+                </TR>
+                <TR>
+                    <TD>
+                         <TT>&nbsp;4.</TT>
+
+                        <INPUT id="restart" TYPE="TEXT" NAME="guess4" SIZE="6" MAXLENGTH="6" VALUE_TYPE="INT" SCRIPT="func(txt) :BookData():evalGuess(self,txt,'result4,'guess5)">
+                    </TD>
+                    <TD>
+                        <INPUT id="restart" TYPE="TEXT" NAME="result4" SIZE="40" onFocus="evalGuess(this.form.guess4,this)" VALUE_TYPE="TEXTREADONLY">
+                    </TD>
+                </TR>
+                <TR>
+                    <TD>
+                         <TT>&nbsp;5.</TT>
+
+                        <INPUT id="restart" TYPE="TEXT" NAME="guess5" SIZE="6" MAXLENGTH="6" VALUE_TYPE="INT" SCRIPT="func(txt) :BookData():evalGuess(self,txt,'result5,'guess6)">
+                    </TD>
+                    <TD>
+                        <INPUT id="restart" TYPE="TEXT" NAME="result5" SIZE="40" onFocus="evalGuess(this.form.guess5,this)" VALUE_TYPE="TEXTREADONLY">
+                    </TD>
+                </TR>
+                <TR>
+                    <TD>
+                         <TT>&nbsp;6.</TT>
+
+                        <INPUT id="restart" TYPE="TEXT" NAME="guess6" SIZE="6" MAXLENGTH="6" VALUE_TYPE="INT" SCRIPT="func(txt) :BookData():evalGuess(self,txt,'result6,'guess7)">
+                    </TD>
+                    <TD>
+                        <INPUT id="restart" TYPE="TEXT" NAME="result6" SIZE="40" onFocus="evalGuess(this.form.guess6,this)" VALUE_TYPE="TEXTREADONLY">
+                    </TD>
+                </TR>
+                <TR>
+                    <TD>
+                         <TT>&nbsp;7.</TT>
+
+                        <INPUT id="restart" TYPE="TEXT" NAME="guess7" SIZE="6" MAXLENGTH="6" VALUE_TYPE="INT" SCRIPT="func(txt) :BookData():evalGuess(self,txt,'result7,'guess8)">
+                    </TD>
+                    <TD>
+                        <INPUT id="restart" TYPE="TEXT" NAME="result7" SIZE="40" onFocus="evalGuess(this.form.guess7,this)" VALUE_TYPE="TEXTREADONLY">
+                    </TD>
+                </TR>
+                <TR>
+                    <TD>
+                         <TT>&nbsp;8.</TT>
+
+                        <INPUT id="restart" TYPE="TEXT" NAME="guess8" SIZE="6" MAXLENGTH="6" VALUE_TYPE="INT" SCRIPT="func(txt) :BookData():evalGuess(self,txt,'result8,'guess9)">
+                    </TD>
+                    <TD>
+                        <INPUT id="restart" TYPE="TEXT" NAME="result8" SIZE="40" onFocus="evalGuess(this.form.guess8,this)" VALUE_TYPE="TEXTREADONLY">
+                    </TD>
+                </TR>
+                <TR>
+                    <TD>
+                         <TT>&nbsp;9.</TT>
+
+                        <INPUT id="restart" TYPE="TEXT" NAME="guess9" SIZE="6" MAXLENGTH="6" VALUE_TYPE="INT" SCRIPT="func(txt) :BookData():evalGuess(self,txt,'result9,'guess10)">
+                    </TD>
+                    <TD>
+                        <INPUT id="restart" TYPE="TEXT" NAME="result9" SIZE="40" onFocus="evalGuess(this.form.guess9,this)" VALUE_TYPE="TEXTREADONLY">
+                    </TD>
+                </TR>
+                <TR>
+                    <TD>
+                         <TT>10.</TT>
+
+                        <INPUT id="restart" TYPE="TEXT" NAME="guess10" SIZE="6" MAXLENGTH="6" VALUE_TYPE="INT" SCRIPT="func(txt) :BookData():evalGuess(self,txt,'result10,'guess11)">
+                    </TD>
+                    <TD>
+                        <INPUT id="restart" TYPE="TEXT" NAME="result10" SIZE="40" onFocus="evalGuess(this.form.guess10,this)" VALUE_TYPE="TEXTREADONLY">
+                    </TD>
+                </TR>
+                <TR>
+                    <TD>
+                         <TT>11.</TT>
+
+                        <INPUT id="restart" TYPE="TEXT" NAME="guess11" SIZE="6" MAXLENGTH="6" VALUE_TYPE="INT" SCRIPT="func(txt) :BookData():evalGuess(self,txt,'result11,'guess12)">
+                    </TD>
+                    <TD>
+                        <INPUT id="restart" TYPE="TEXT" NAME="result11" SIZE="40" onFocus="evalGuess(this.form.guess11,this)" VALUE_TYPE="TEXTREADONLY">
+                    </TD>
+                </TR>
+                <TR>
+                    <TD>
+                         <TT>12.</TT>
+
+                        <INPUT id="restart" TYPE="TEXT" NAME="guess12" SIZE="6" MAXLENGTH="6" VALUE_TYPE="INT" SCRIPT="func(txt) :BookData():evalGuess(self,txt,'result12,'guess13)">
+                    </TD>
+                    <TD>
+                        <INPUT id="restart" TYPE="TEXT" NAME="result12" SIZE="40" onFocus="evalGuess(this.form.guess12,this)" VALUE_TYPE="TEXTREADONLY">
+                    </TD>
+                </TR>
+                <TR>
+                    <TD>
+                         <TT>13.</TT>
+
+                        <INPUT id="restart" TYPE="TEXT" NAME="guess13" SIZE="6" MAXLENGTH="6" VALUE_TYPE="INT" SCRIPT="func(txt) :BookData():evalGuess(self,txt,'result13,'guess14)">
+                    </TD>
+                    <TD>
+                        <INPUT id="restart" TYPE="TEXT" NAME="result13" SIZE="40" onFocus="evalGuess(this.form.guess13,this)" VALUE_TYPE="TEXTREADONLY">
+                    </TD>
+                </TR>
+                <TR>
+                    <TD>
+                         <TT>14.</TT>
+
+                        <INPUT id="restart" TYPE="TEXT" NAME="guess14" SIZE="6" MAXLENGTH="6" VALUE_TYPE="INT" SCRIPT="func(txt) :BookData():evalGuess(self,txt,'result14,'guess15)">
+                    </TD>
+                    <TD>
+                        <INPUT id="restart" TYPE="TEXT" NAME="result14" SIZE="40" onFocus="evalGuess(this.form.guess14,this)" VALUE_TYPE="TEXTREADONLY">
+                    </TD>
+                </TR>
+                <TR>
+                    <TD>
+                         <TT>15.</TT>
+
+                        <INPUT id="restart" TYPE="TEXT" NAME="guess15" SIZE="6" MAXLENGTH="6" VALUE_TYPE="INT" SCRIPT="func(txt) :BookData():evalGuess(self,txt,'result15,'guess16)">
+                    </TD>
+                    <TD>
+                        <INPUT id="restart" TYPE="TEXT" NAME="result15" SIZE="40" onFocus="evalGuess(this.form.guess15,this)" VALUE_TYPE="TEXTREADONLY">
+                    </TD>
+                </TR>
+                <TR>
+                    <TD>
+                         <TT>16.</TT>
+
+                        <INPUT id="restart" TYPE="TEXT" NAME="guess16" SIZE="6" MAXLENGTH="6" VALUE_TYPE="INT" SCRIPT="func(txt) :BookData():evalGuess(self,txt,'result16,nil)">
+                    </TD>
+                    <TD>
+                        <INPUT id="restart" TYPE="TEXT" NAME="result16" SIZE="40" onFocus="evalGuess(this.form.guess16,this)" VALUE_TYPE="TEXTREADONLY">
+                    </TD>
+                </TR>
+            </center>
+        </TABLE>
+        </FORM>
+        <script language="javascript" type="text/javascript">
+            <!--
+            initGame(true);
+            //-->
+        </script>
+        <HR>
+        
+<H2><A NAME="describe">Describe PFB</A></H2>
+
+        
+        <P>PFB (Pico, Fermi, Bagels) is a number guessing game, similar to MasterMind or Jotto. For each guess, you will be told:</P>
+        <DL>
+            
+<DT>Fermi</DT>
+
+            <DD>a correct digit placed correctly</DD>
+            
+<DT>Pico</DT>
+
+            <DD>a correct digit placed incorrectly</DD>
+            
+<DT>Bagels</DT>
+
+            <DD>no digits are correct</DD>
+        </DL>
+        
+<H2><A NAME="using">Using PFB</A></H2>
+
+        <DL>
+            
+<DT id="restart">New Game</DT>
+
+            <DD>start a new game</DD>
+            
+<DT>Allow Zero</DT>
+
+            <DD>is zero a possible digit?</DD>
+            
+<DT># Digits</DT>
+
+            <DD>select number of digits (2-6)</DD>
+            
+<DT>Give Up</DT>
+
+            <DD>see answer</DD>
+            
+<DT>Guess</DT>
+
+            <DD>type a number guess</DD>
+            
+<DT>Result</DT>
+
+            <DD>&lt;tab&gt; from Guess, or select Result field for feedback; on Newton, Result displayed when Guess reaches correct number of digits</DD>
+        </DL>
+        
+<H2><A NAME="example">Example</A></H2>
+
+        <P>If Allow Zero = checked, Digits = 3, and PFB's number = 029</P>
+        <TABLE SUMMARY="example guesses and results">
+            <TR>
+                <TH ALIGN="LEFT">Guess</TH>
+                <TH ALIGN="LEFT">Result</TH>
+                <TH ALIGN="LEFT">comment</TH>
+            </TR>
+            <TR>
+                <TD>376</TD>
+                <TD>Bagels</TD>
+                <TD>no digits correct</TD>
+            </TR>
+            <TR>
+                <TD>914</TD>
+                <TD>Pico</TD>
+                <TD>1 digit correct but in wrong place</TD>
+            </TR>
+            <TR>
+                <TD>820</TD>
+                <TD>Fermi Pico</TD>
+                <TD>2 digits correct, but 1 in wrong place</TD>
+            </TR>
+            <TR>
+                <TD COLSPAN=2>...</TD>
+                <TD>(keep guessing)</TD>
+            </TR>
+            <TR>
+                <TD>092</TD>
+                <TD>Fermi Pico Pico</TD>
+                <TD>all digits correct, 2 in wrong places</TD>
+            </TR>
+            <TR>
+                <TD>029</TD>
+                <TD>Fermi Fermi Fermi !!!</TD>
+                <TD>you won</TD>
+            </TR>
+        </TABLE>
+        
+<H2><A NAME="versions">Versions</A></H2>
+
+        <P>This version of Pico Fermi Bagels requires a browser with JavaScript support (or NewtonScript support, i.e.,
+            <A HREF="../newton/index.htm#NewtsCape">Newt's Cape</A>on 2.x Newton with i:General:NewtonScript:Compile preference); besides Newt's Cape, it has been tested with</P>
+        <UL>
+            <LI>Macintosh OS X:
+                <A HREF="http://www.apple.com/safari/">Safari</A>2.0;
+                <A HREF="http://www.mozilla.org/products/firefox/">Firefox</A>1.0.4;
+                <A HREF="http://www.microsoft.com/mac/">Internet Explorer</A>5.2.3;
+                <!--<A HREF="http://free.aol.com/downloadaol">AOL</A> 10.3-->
+            </LI>
+            <LI>Macintosh OS 9:
+                <A HREF="http://browser.netscape.com/">Netscape</A>4.7, 4.5, 4.0.8, 3.0.4;
+                <A HREF="http://www.microsoft.com/mac/">Internet Explorer</A>5.0, 4.5;
+                <!--<A HREF="http://free.aol.com/downloadaol">AOL</A> 4.0 [not: 3.0]-->
+            </LI>
+            <LI>Windows:
+                <A HREF="http://www.microsoft.com/windows/ie/">Internet Explorer</A>6.0, 5.0, 4.0;
+                <A HREF="http://www.mozilla.org/products/firefox/">Firefox</A>1.0.4;
+                <A HREF="http://browser.netscape.com/">Netscape</A>7.2, 6.0, 4.0.8, 3.0;
+                <!--<A HREF="http://free.aol.com/downloadaol">AOL</A> 9.0, 7.0, 4.0;-->
+                <A HREF="http://www.opera.com/">Opera</A>8.0</LI>
+        </UL>
+        <P>Let me know about your experience with other browsers.</P>
+        <P>PFB is similar in concept and strategy to MasterMind and Jotto (but PFB does not allow duplicate digits). After I first saw "Pico Fermi Bagels" (PFB) as a Basic program at the Lawrence Hall of Science in Berkeley in the early '70s, I wrote several Logo
+            versions. My kids convinced me it was easier to remember "Fermi" by "firm" (though some programs may reverse roles of Fermi and Pico). PFB is a nice simple app to try in each new programming language/environment.</P>
+        <P>Last updated: 29 Apr 2017: updated CSS
+            <UL>
+                <LI>
+                    <A HREF="index.htm">Steve's Other JavaScript apps</A>
+                </LI>
+                <!--<LI><A HREF="http://www.freecfm.com/j/johnathan398/bagelsnew.html">online version</A>,
+    <A HREF="http://www.johnonline.cjb.net">other versions</A> by Johnathan Fullman</LI>-->
+            </UL>
+            </center>
+            
+<H2><A NAME="distribution">Distribution</A></H2>
+
+            <p>I saw the
+                <a href="http://communicrossings.com/html/js/pfb.htm#example">original version</a>and thought was cool but it needed CSS</p>
+            <P>&copy; 1999-2017, X. King. All Rights Reserved Worldwide.</P>
+    </BODY>
+</HTML>
